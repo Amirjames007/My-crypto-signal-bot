@@ -11,13 +11,15 @@ export type TradeSignal = {
   rr_ratio: string;
   ai_reasoning: string;
   timestamp: number;
+  status?: 'PENDING' | 'WON' | 'LOST';
 };
 
 export async function analyzeCryptoData(
   asset: string,
   technicalData: any,
   smcData: any,
-  timeframe: string
+  timeframe: string,
+  recentTrades: TradeSignal[] = []
 ): Promise<TradeSignal> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -26,16 +28,21 @@ export async function analyzeCryptoData(
 
   const ai = new GoogleGenAI({ apiKey });
 
+  const recentTradesContext = recentTrades.length > 0 
+    ? `\nRecent Trades History (Learn from these past signals to improve your accuracy):\n${JSON.stringify(recentTrades.slice(0, 5), null, 2)}\nAnalyze why past trades won or lost and adjust your strategy accordingly.`
+    : '';
+
   const prompt = `
 You are an Elite Quantitative Developer & Institutional Crypto AI Architect.
 Analyze the following technical, SMC, and on-chain data for ${asset} on the ${timeframe} timeframe.
-Use the googleSearch tool to fetch the latest Twitter/X sentiment, Macro News events, Whale wallet movements, and BTC Dominance (BTC.D).
+Use the googleSearch tool to fetch the latest Twitter/X sentiment, Macro News events, Whale wallet movements, and BTC Dominance (BTC.D). Do NOT ignore whale wallets and social media sentiment.
 
 Technical Data:
 ${JSON.stringify(technicalData, null, 2)}
 
 Smart Money Concepts (SMC) Data:
 ${JSON.stringify(smcData, null, 2)}
+${recentTradesContext}
 
 Evaluate the confluence of these factors.
 Apply Strict Risk Management:
@@ -52,7 +59,7 @@ Return a STRICT JSON output with the following structure:
   "take_profit_1": 0.0,
   "take_profit_2": 0.0,
   "rr_ratio": "1:3",
-  "ai_reasoning": "Detailed breakdown of Indicators, SMC, and Sentiment"
+  "ai_reasoning": "Detailed breakdown of Indicators, SMC, Whale Movements, and X (Twitter) Sentiment"
 }
 `;
 
