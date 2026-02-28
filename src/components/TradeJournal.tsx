@@ -27,7 +27,21 @@ export function TradeJournal({ signals }: { signals: TradeSignal[] }) {
       const pending = sigs.filter(s => s.status === 'PENDING' || !s.status).length;
       const totalResolved = won + lost;
       const winRate = totalResolved > 0 ? ((won / totalResolved) * 100).toFixed(1) : '0.0';
-      return { won, lost, pending, winRate };
+      
+      // Calculate performance percentage (Profit Factor simplified)
+      // Assuming RR is roughly 1:2 on average for this calculation if not explicitly parsed
+      // A more accurate way would be to parse the rr_ratio string, but for simplicity:
+      // Performance % = (WinRate * AverageReward) - (LossRate * AverageRisk)
+      // If we assume Risk = 1, Reward = 2:
+      // Perf = (WinRate/100 * 2) - ((100-WinRate)/100 * 1)
+      const winRateNum = parseFloat(winRate);
+      const performancePct = totalResolved > 0 
+        ? (((winRateNum / 100) * 2) - (((100 - winRateNum) / 100) * 1)) * 100 
+        : 0;
+        
+      const formattedPerf = performancePct > 0 ? `+${performancePct.toFixed(1)}%` : `${performancePct.toFixed(1)}%`;
+
+      return { won, lost, pending, winRate, formattedPerf };
     };
 
     const todayStats = getStats(todaySignals);
@@ -41,15 +55,24 @@ export function TradeJournal({ signals }: { signals: TradeSignal[] }) {
     
     autoTable(doc, {
       startY: 36,
-      head: [['Period', 'Won', 'Lost', 'Pending', 'Win Rate']],
+      head: [['Period', 'Won', 'Lost', 'Pending', 'Win Rate', 'Est. Perf.']],
       body: [
-        ['Today', todayStats.won.toString(), todayStats.lost.toString(), todayStats.pending.toString(), `${todayStats.winRate}%`],
-        ['This Week', weeklyStats.won.toString(), weeklyStats.lost.toString(), weeklyStats.pending.toString(), `${weeklyStats.winRate}%`],
-        ['This Month', monthlyStats.won.toString(), monthlyStats.lost.toString(), monthlyStats.pending.toString(), `${monthlyStats.winRate}%`],
-        ['All Time', allTimeStats.won.toString(), allTimeStats.lost.toString(), allTimeStats.pending.toString(), `${allTimeStats.winRate}%`],
+        ['Today', todayStats.won.toString(), todayStats.lost.toString(), todayStats.pending.toString(), `${todayStats.winRate}%`, todayStats.formattedPerf],
+        ['This Week', weeklyStats.won.toString(), weeklyStats.lost.toString(), weeklyStats.pending.toString(), `${weeklyStats.winRate}%`, weeklyStats.formattedPerf],
+        ['This Month', monthlyStats.won.toString(), monthlyStats.lost.toString(), monthlyStats.pending.toString(), `${monthlyStats.winRate}%`, monthlyStats.formattedPerf],
+        ['All Time', allTimeStats.won.toString(), allTimeStats.lost.toString(), allTimeStats.pending.toString(), `${allTimeStats.winRate}%`, allTimeStats.formattedPerf],
       ],
       theme: 'grid',
-      headStyles: { fillColor: [40, 40, 40] }
+      headStyles: { fillColor: [40, 40, 40] },
+      didParseCell: function(data) {
+        if (data.section === 'body' && data.column.index === 5) {
+          if (data.cell.raw.toString().startsWith('+')) {
+            data.cell.styles.textColor = [34, 197, 94]; // emerald-500
+          } else if (data.cell.raw.toString().startsWith('-')) {
+            data.cell.styles.textColor = [244, 63, 94]; // rose-500
+          }
+        }
+      }
     });
 
     const finalY = (doc as any).lastAutoTable.finalY || 36;
