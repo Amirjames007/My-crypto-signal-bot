@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchKlines } from '../lib/binance';
 import { calculateEMA, calculateRSI, calculateMACD, calculateATR, calculateBollingerBands, generateSMCData } from '../lib/indicators';
-import { analyzeCryptoData, TradeSignal } from '../lib/gemini';
+import { analyzeCryptoData, TradeSignal } from '../lib/ai';
 import { SignalCard } from './SignalCard';
 import { TradeJournal } from './TradeJournal';
 import { Activity, RefreshCw, AlertCircle, Bot, StopCircle } from 'lucide-react';

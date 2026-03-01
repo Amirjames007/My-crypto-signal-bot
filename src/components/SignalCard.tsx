@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TradeSignal } from '../lib/gemini';
+import { TradeSignal } from '../lib/ai';
 import { TrendingUp, TrendingDown, Minus, ShieldAlert, Target, Crosshair, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '../lib/utils';
 import Markdown from 'react-markdown';

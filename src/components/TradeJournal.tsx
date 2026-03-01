@@ -1,5 +1,5 @@
 import React from 'react';
-import { TradeSignal } from '../lib/gemini';
+import { TradeSignal } from '../lib/ai';
 import { format, isToday, isThisWeek, isThisMonth } from 'date-fns';
 import { FileText, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
