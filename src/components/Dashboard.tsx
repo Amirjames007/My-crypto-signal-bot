@@ -6,7 +6,7 @@ import { SignalCard } from './SignalCard';
 import { TradeJournal } from './TradeJournal';
 import { Activity, RefreshCw, AlertCircle, Bot, StopCircle } from 'lucide-react';
 
-const ASSETS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
+const ASSETS = ['BTCUSDT', 'SOLUSDT'];
 const TIMEFRAMES = ['15m', '1h', '4h', '1d'];
 
 export function Dashboard() {
@@ -127,8 +127,8 @@ export function Dashboard() {
     // Run immediately on start
     runAutoPilotCycle();
 
-    // Then run every 1 hour (3600000 ms)
-    const intervalId = setInterval(runAutoPilotCycle, 60 * 60 * 1000);
+    // Then run every 4 hours (14400000 ms)
+    const intervalId = setInterval(runAutoPilotCycle, 4 * 60 * 60 * 1000);
 
     return () => {
       isCancelled = true;
@@ -188,7 +188,7 @@ export function Dashboard() {
               }`}
             >
               {isAutoPilot ? <StopCircle className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-              {isAutoPilot ? 'Stop Auto-Pilot' : 'Start Auto-Pilot (1H)'}
+              {isAutoPilot ? 'Stop Auto-Pilot' : 'Start Auto-Pilot (4H)'}
             </button>
           </div>
         </div>
