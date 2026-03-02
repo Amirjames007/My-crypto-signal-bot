@@ -9,7 +9,7 @@ export type Kline = {
 };
 
 export async function fetchKlines(symbol: string, interval: string, limit: number = 200): Promise<Kline[]> {
-  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  const url = `https://data-api.binance.vision/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch klines for ${symbol} at ${interval}`);

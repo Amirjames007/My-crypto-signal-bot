@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import OpenAI from "openai";
@@ -10,7 +11,14 @@ function getOpenAI(): OpenAI {
     if (!key) {
       throw new Error("OPENAI_API_KEY environment variable is required");
     }
-    openaiClient = new OpenAI({ apiKey: key });
+    openaiClient = new OpenAI({ 
+      apiKey: key,
+      baseURL: "https://openrouter.ai/api/v1",
+      defaultHeaders: {
+        "HTTP-Referer": "https://ais-dev.run.app", // Optional, for including your app on openrouter.ai rankings.
+        "X-Title": "Crypto AI Architect", // Optional. Shows in rankings on openrouter.ai.
+      }
+    });
   }
   return openaiClient;
 }
@@ -61,7 +69,7 @@ Return a STRICT JSON output with the following structure:
 `;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       });
