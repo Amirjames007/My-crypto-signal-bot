@@ -13,7 +13,9 @@ let openaiClient: OpenAI | null = null;
 
 function getOpenAI(): OpenAI {
   if (!openaiClient) {
-    const key = process.env.OPENAI_API_KEY;
+    // Use environment variable first, then fallback to the provided key for immediate fix
+    const key = process.env.OPENAI_API_KEY || "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";
+    
     if (!key) {
       throw new Error("OPENAI_API_KEY environment variable is required");
     }
