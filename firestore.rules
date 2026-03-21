@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: trades
+    // Document ID: auto-generated
+    // Fields:
+    //   - asset: string (required)
+    //   - action: string (required, enum: BUY, SELL, HOLD)
+    //   - confidence: number (required)
+    //   - entry: string (required)
+    //   - stop_loss: number (required)
+    //   - take_profit_1: number (required)
+    //   - take_profit_2: number (required)
+    //   - rr_ratio: string (required)
+    //   - ai_reasoning: string (required)
+    //   - timestamp: number (required)
+    //   - status: string (optional, enum: PENDING, WON, LOST)
+    //   - userId: string (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidTrade(data) {
+      return data.asset is string && data.asset.size() > 0 && data.asset.size() < 20 &&
+             data.action in ['BUY', 'SELL', 'HOLD'] &&
+             data.confidence is number && data.confidence >= 0 && data.confidence <= 100 &&
+             data.entry is string &&
+             data.stop_loss is number &&
+             data.take_profit_1 is number &&
+             data.take_profit_2 is number &&
+             data.rr_ratio is string &&
+             data.ai_reasoning is string && data.ai_reasoning.size() < 5000 &&
+             data.timestamp is number &&
+             data.userId == request.auth.uid &&
+             (!('status' in data) || data.status in ['PENDING', 'WON', 'LOST']);
+    }
+
+    match /trades/{tradeId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidTrade(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidTrade(request.resource.data);
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+  }
+}

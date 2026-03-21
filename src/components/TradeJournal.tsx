@@ -144,7 +144,7 @@ export function TradeJournal({ signals }: { signals: TradeSignal[] }) {
           </thead>
           <tbody>
             {signals.map((s, i) => (
-              <tr key={i} className="border-b border-white/5 hover:bg-zinc-800/50 transition-colors">
+              <tr key={(s as any).id || i} className="border-b border-white/5 hover:bg-zinc-800/50 transition-colors">
                 <td className="px-4 py-3 font-mono text-xs">{format(new Date(s.timestamp), 'MM-dd HH:mm')}</td>
                 <td className="px-4 py-3 font-medium text-white">{s.asset}</td>
                 <td className="px-4 py-3">

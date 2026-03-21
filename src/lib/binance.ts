@@ -26,3 +26,31 @@ export async function fetchKlines(symbol: string, interval: string, limit: numbe
     closeTime: d[6],
   }));
 }
+
+export type Ticker = {
+  symbol: string;
+  priceChangePercent: number;
+  lastPrice: number;
+  highPrice: number;
+  lowPrice: number;
+  quoteVolume: number;
+};
+
+export async function fetchTickers(symbols: string[]): Promise<Ticker[]> {
+  const symbolsStr = JSON.stringify(symbols);
+  const url = `/api/ticker?symbols=${encodeURIComponent(symbolsStr)}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Failed to fetch tickers`);
+  }
+  const data = await response.json();
+  return data.map((d: any) => ({
+    symbol: d.symbol,
+    priceChangePercent: parseFloat(d.priceChangePercent),
+    lastPrice: parseFloat(d.lastPrice),
+    highPrice: parseFloat(d.highPrice),
+    lowPrice: parseFloat(d.lowPrice),
+    quoteVolume: parseFloat(d.quoteVolume),
+  }));
+}
