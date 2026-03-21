@@ -47,7 +47,7 @@ service cloud.firestore {
              data.take_profit_1 is number &&
              data.take_profit_2 is number &&
              data.rr_ratio is string &&
-             data.ai_reasoning is string && data.ai_reasoning.size() < 5000 &&
+             data.ai_reasoning is string && data.ai_reasoning.size() < 10000 &&
              data.timestamp is number &&
              data.userId == request.auth.uid &&
              (!('status' in data) || data.status in ['PENDING', 'WON', 'LOST']);

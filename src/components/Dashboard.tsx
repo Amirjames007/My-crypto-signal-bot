@@ -9,6 +9,57 @@ import { auth, db } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
 import { collection, addDoc, query, where, orderBy, onSnapshot, updateDoc, doc, limit, getDocFromServer } from 'firebase/firestore';
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
 const ASSETS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'ADAUSDT', 'XRPUSDT', 'DOTUSDT', 'LINKUSDT', 'AVAXUSDT', 'MATICUSDT'];
 const TIMEFRAMES = ['15m', '1h', '4h', '1d'];
 
@@ -41,8 +92,7 @@ export function Dashboard() {
     const q = query(
       collection(db, 'trades'),
       where('userId', '==', user.uid),
-      orderBy('timestamp', 'desc'),
-      limit(50)
+      limit(100)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -50,13 +100,22 @@ export function Dashboard() {
         id: doc.id,
         ...doc.data()
       })) as any[];
-      setJournal(trades);
-      if (trades.length > 0 && !currentSignal) {
-        setCurrentSignal(trades[0]);
+      
+      // Sort in memory to avoid index requirements
+      const sortedTrades = trades.sort((a, b) => b.timestamp - a.timestamp);
+      
+      setJournal(sortedTrades);
+      if (sortedTrades.length > 0 && !currentSignal) {
+        setCurrentSignal(sortedTrades[0]);
       }
     }, (err) => {
       console.error("Firestore error:", err);
-      setError("Failed to sync with database. Check your connection.");
+      setError("Failed to sync with database. Check your connection or indexes.");
+      try {
+        handleFirestoreError(err, OperationType.LIST, 'trades');
+      } catch (e) {
+        // Error already logged by handleFirestoreError
+      }
     });
 
     return () => unsubscribe();
@@ -152,7 +211,11 @@ export function Dashboard() {
       const signal = await analyzeCryptoData(targetAsset, technicalData, smcData, targetTimeframe, user.uid, journalRef.current);
       
       // 5. Save to Firestore
-      await addDoc(collection(db, 'trades'), signal);
+      try {
+        await addDoc(collection(db, 'trades'), signal);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.CREATE, 'trades');
+      }
       
       // 6. Update pending trades in Firestore
       const pendingTrades = journalRef.current.filter(t => t.status === 'PENDING' && t.asset === targetAsset);
@@ -169,7 +232,11 @@ export function Dashboard() {
         }
         
         if (newStatus !== 'PENDING') {
-          await updateDoc(doc(db, 'trades', (trade as any).id), { status: newStatus });
+          try {
+            await updateDoc(doc(db, 'trades', (trade as any).id), { status: newStatus });
+          } catch (err) {
+            handleFirestoreError(err, OperationType.UPDATE, `trades/${(trade as any).id}`);
+          }
         }
       }
 
